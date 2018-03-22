@@ -1,7 +1,13 @@
 ---
-title: Front Page
+title: Nota de de Vos
 ---
 
-# Notes
+# Posts
 
-A github pages page.
+<ul>
+  {% for post in site.posts %}
+    <li>
+      <a href="{{ post.url }}">{{ post.title }}</a>
+    </li>
+  {% endfor %}
+</ul>
