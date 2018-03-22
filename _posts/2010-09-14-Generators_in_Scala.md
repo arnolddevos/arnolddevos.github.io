@@ -1,3 +1,5 @@
+---
+---
 # Generators in Scala
 
 I was playing around with the continuation support in scala last year.  I wanted to create something as useful and easy to use as a python generator.

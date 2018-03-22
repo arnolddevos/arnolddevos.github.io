@@ -1,3 +1,5 @@
+---
+---
 # Erlang Style
 
 Thoughts about Erlang vs. original scala actors vs. Akka inspired by Steve Vinoski's talk at Yow!

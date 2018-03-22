@@ -1,3 +1,5 @@
+---
+---
 # Polyphonic Scala Actors Part 1
 
 An actor responds to one message at a time.  What if you want it to recognise some combination of messages?  The idea is to respond when a combination, or "chord", occurs irrespective of the order in which the individual messages, or "notes", arrive.

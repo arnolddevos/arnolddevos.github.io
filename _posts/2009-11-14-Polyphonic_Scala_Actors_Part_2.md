@@ -1,3 +1,5 @@
+---
+---
 # Polyphonic Scala Actors Part 2
 
 The Joins module is a non-intrusive extension to the scala actors library that allows an actor to respond to a combination of messages called a chord.

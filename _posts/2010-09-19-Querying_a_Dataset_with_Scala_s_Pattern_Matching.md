@@ -1,3 +1,5 @@
+---
+---
 # Querying a Dataset with Scala's Pattern Matching
 
 This post is about matching patterns against collections, combining patterns in interesting ways and defining patterns in terms of other patterns.  Patterns defined in this way look and feel like a lightweight, domain specific query language.  Very little supporting code is required.

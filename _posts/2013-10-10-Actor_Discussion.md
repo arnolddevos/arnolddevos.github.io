@@ -1,3 +1,5 @@
+---
+---
 # Temple of purity
 
 ### Creed

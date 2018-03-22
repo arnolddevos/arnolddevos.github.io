@@ -1,3 +1,5 @@
+---
+---
 # Pimping Servlet and Jetty
 
 Sometimes you just want a servlet, not a whole web application framework.   But to a Scala programmer the servlet API is pretty ugly.

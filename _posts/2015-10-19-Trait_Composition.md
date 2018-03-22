@@ -1,3 +1,5 @@
+---
+---
 # Trait Composition (in scala)
 
 Traits are powerful magic when combined with self type annotations and abstract type members. But is this malignant or benevolent magic? I have some tips for dealing with, or avoiding, out-of-control trait compositions.
