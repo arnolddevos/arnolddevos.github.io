@@ -1,5 +1,5 @@
 ---
-title: Nota de de Vos
+title: nótaí de de Vos
 ---
 
 My name is Arnold deVos and I am located in Sydney, Australia.  I am a consultant in the electric power industry and also write software.

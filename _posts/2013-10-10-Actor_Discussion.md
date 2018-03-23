@@ -199,9 +199,5 @@ Github:
 
 https://github.com/arnolddevos/FlowActors
 
-Slides: 
-
-http://notes.backgroundsignal.com/Actor_Discussion.html
-
 @a4dev
       
