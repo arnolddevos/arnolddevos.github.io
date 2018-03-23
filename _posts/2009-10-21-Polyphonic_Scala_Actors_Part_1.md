@@ -41,7 +41,7 @@ The requirement to define messages this way is an awkward aspect of this approac
 
 ## Nested React Clauses
 
-More typical actor code would use case classes for these messages. Actually, this particular example is simple enough that it can be written in an idiomatic way ([Buffer Example 1](Buffer_Example_1.html)):
+More typical actor code would use case classes for these messages. Actually, this particular example is simple enough that it can be written in an idiomatic way ([Buffer Example 1](/posts/Polyphonic_Scala_Actors_Part_1/Buffer_Example_1.html)):
 
 ```scala
 case class Put(x: String)
@@ -55,7 +55,7 @@ val b = actor {
 
 The `&` operator is gone, replaced by nested `react` clauses.  The inner block forwards the `String` from the `Put` message to the sender of the `Get` message.   The actor's message queuing semantics make this behaviour independent of the order of message arrival.
 
-This is simple and idiomatic.  It works naturally with other actors and their message classes. It will even work if the case patterns have guards.  But it is not general, as can be seen if we try to add another chord ([Buffer Example 2](Buffer_Example_2.html)):
+This is simple and idiomatic.  It works naturally with other actors and their message classes. It will even work if the case patterns have guards.  But it is not general, as can be seen if we try to add another chord ([Buffer Example 2](/posts/Polyphonic_Scala_Actors_Part_1/Buffer_Example_2.html)):
 
 ```scala
 case class Put(x: String)
@@ -81,7 +81,7 @@ This example wants to handle messages for integers as well as strings, but it ha
 
 ## Pattern/Join/Action
 
-Can we have chords and case classes?   Better, can we have chords with arbitrary case patterns including guards?  Here is the original example again, coded with a proposed syntax ([Buffer Example 3](Buffer_Example_3.html)):
+Can we have chords and case classes?   Better, can we have chords with arbitrary case patterns including guards?  Here is the original example again, coded with a proposed syntax ([Buffer Example 3](/posts/Polyphonic_Scala_Actors_Part_1/Buffer_Example_3.html)):
 
 ```scala
 case class Put(x: String)
@@ -104,7 +104,7 @@ When the action is executed:
 *   `lastSender` designates the sender of the message matching the last pattern in the chord (which may or may not be the last message received)
 *   the actor's queue will contain any messages received that were not part of the chord
 
-And here is the more complex buffer from above, with bug corrected ([Buffer Example 4](Buffer_Example_4.html)):
+And here is the more complex buffer from above, with bug corrected ([Buffer Example 4](/posts/Polyphonic_Scala_Actors_Part_1/Buffer_Example_4.html)):
 
 ```scala
 case class Put(x: String)
@@ -126,5 +126,5 @@ val b = actor {
 }
 ```
 
-The semantics and implementation of this syntax are discussed in [Polyphonic Scala Actors Part 2](Polyphonic_Scala_Actors_Part_2.html).
+The semantics and implementation of this syntax are discussed in [Polyphonic Scala Actors Part 2](/2009/11/14/Polyphonic_Scala_Actors_Part_2.html).
 

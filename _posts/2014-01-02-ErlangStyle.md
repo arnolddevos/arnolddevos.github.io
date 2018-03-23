@@ -6,7 +6,7 @@ Thoughts about Erlang vs. original scala actors vs. Akka inspired by Steve Vinos
 
 I caught Steve Vinoski's talk at Yow! Sydney and met him afterwards at the conference drinks.  That was something for me because I have read many of his pieces over the years.  Anyway, Steve is a friendly guy.  His talk was about Riak and Erlang and over beers we discussed the difference between Erlang's actors and the mainstream scala offering, Akka. 
 
-This is a subject that interests me. I gave a talk at a ScalaSyd meetup about the frustrations of scala's actors and I am working on an alternative approach, [FlowLib](FlowLib.html).  Now, I don't think the pros and cons of scala actors is a burning topic for Steve but he cheerfully indulged me.
+This is a subject that interests me. I gave a talk at a ScalaSyd meetup about the frustrations of scala's actors and I am working on an alternative approach, [FlowLib](https://github.com/arnolddevos/flowlib).  Now, I don't think the pros and cons of scala actors is a burning topic for Steve but he cheerfully indulged me.
 
 My own conclusion is that Erlang encourages, or maybe enforces, a more functional style than Akka.  And Erlang has an extra little feature called selective receive.  Except that it isn't a little feature, it is essential to the programming model. 
 

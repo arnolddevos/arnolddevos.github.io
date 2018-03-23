@@ -10,7 +10,7 @@ https://github.com/arnolddevos/FlowLib
 
 It is not just about the cores. The world is asynchronous.
 
-![Controller](Transactor/microcontroller.jpg)
+![Controller](/posts/Transactor/microcontroller.jpg)
 
 A microcontroller collecting events from sensors around the house.
 
@@ -31,14 +31,14 @@ A microcontroller collecting events from sensors around the house.
 
 ## The trouble with Akka
 
-![Cheap Shot 1](Transactor/anyunit1.png)
+![Cheap Shot 1](/posts/Transactor/anyunit1.png)
 
 But it is a popular system...
 
 
 ## Don't Get Me Started...
 
-![Cheap Shot 2](Transactor/anyunit2.png)
+![Cheap Shot 2](/posts/Transactor/anyunit2.png)
 
 See my "Erlang Style" blog for examples of the problem.
 
@@ -54,7 +54,7 @@ Please don't make me go back to while loops :-(
 
 ## What Would SPJ Do?
 
-![SPJ](Transactor/spj.png)
+![SPJ](/posts/Transactor/spj.png)
 
 
 ## How Should We Proceed?

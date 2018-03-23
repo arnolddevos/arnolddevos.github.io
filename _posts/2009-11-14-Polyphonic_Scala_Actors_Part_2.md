@@ -4,7 +4,7 @@
 
 The Joins module is a non-intrusive extension to the scala actors library that allows an actor to respond to a combination of messages called a chord.
 
-The background can be read in [Polyphonic Scala Actors Part 1](Polyphonic_Scala_Actors_Part_1.html).
+The background can be read in [Polyphonic Scala Actors Part 1](/2009/10/21/Polyphonic_Scala_Actors_Part_1.html).
 
 ## A Short Manual
 
@@ -54,7 +54,7 @@ Within an action, `lastSender` designates the sender of the message matching the
 
 ## Examples
 
-Here is the standard example for joins.  It implements a buffer as described in [Polyphonic Scala Actors Part 1](Polyphonic_Scala_Actors_Part_1.html):
+Here is the standard example for joins.  It implements a buffer as described in [Polyphonic Scala Actors Part 1](/2009/10/21/Polyphonic_Scala_Actors_Part_1.html):
 
 ```scala
 import scala.actors.Actor._

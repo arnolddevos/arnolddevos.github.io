@@ -35,7 +35,7 @@ last
 
 ## The Scala
 
-I was not able to achieve this in scala back then but I can get much closer now.  I was inspired to revisit this subject by a good [blog](blog.html) entry on the same subject by Jim McBeath: [http://jim-mcbeath.blogspot.com/2010/09/standalone-generic-scala-generator.html](http://jim-mcbeath.blogspot.com/2010/09/standalone-generic-scala-generator.html)
+I was not able to achieve this in scala back then but I can get much closer now.  I was inspired to revisit this subject by a good post on the same subject by Jim McBeath: [http://jim-mcbeath.blogspot.com/2010/09/standalone-generic-scala-generator.html](http://jim-mcbeath.blogspot.com/2010/09/standalone-generic-scala-generator.html)
 
 The part that stymied me at first was the for loop appearing in the generator.  Lets cut to the solution.  Here is my scala equivalent of the above python code:
 

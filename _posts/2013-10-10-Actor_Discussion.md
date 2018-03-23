@@ -31,7 +31,7 @@ readByte() != readByte()
 ```
 ## Pure in an Impure World?
 
-![Control System](Feedback_loop_with_descriptions.svg)
+![Control System](/posts/Actor_Discussion/Feedback_loop_with_descriptions.svg)
 
 ## The State Monad
 
