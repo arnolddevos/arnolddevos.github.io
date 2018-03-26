@@ -1,3 +1,6 @@
+---
+title: Language-Level Effects
+---
 # Ideas for Language-Level Effects in Scala 
 
 The scala language may get an effects system, it is the last thing on the list on the [dotty]() page.  I am speculating, but I think this will be based on passing values around that represent the _capability_ to cause the effect.  
@@ -6,7 +9,7 @@ For example, `println(x: String)` would be given an extra argument `println(x: S
 
 ## Thunks and Monads
 
-In practice the `IOEffect` would be passed implicitly like so: `println(x: String)(implicit e: IOEffect): Unit`.  This allows use to write an expression like `println("Hello World")` which does no printing but produces a _thunk_ or suspended action.  
+In practice the `IOEffect` would be passed implicitly like so: `println(x: String)(implicit e: IOEffect): Unit`.  This allows us to write an expression like `println("Hello World")` which does no printing but produces a _thunk_ or suspended action.  
 
 The thunk is an immutable value that can be incorporated into other thunks of the same type or into data structures.  Its type is `implicit IOEffect => Unit`.  The corresponding type would be `IO[Unit]` if we were using a monad to represent IO effects.
 
@@ -44,17 +47,17 @@ There are still more immutable values, such as `ImmutableArray` and `List` insta
 
 This could be formalized using a marker trait, `Immutable`.  If a type `T` is a subtype  of `AnyVal` or `Immutable` then it is an immutable type.  A class or trait inheriting `Immutable` must conform with the three rules above or it must be annotated `@uncheckedImmutable`. 
 
-The standard library type `collection.immutable.Iterable` should be a subtype of `Immutable`. Concrete types such as `ImmutableArray` and `::` (the `List` cons cell) should be annotated as `@uncheckedImmutable`.  Many other types would also be subtypes of `Immutable`. 
+The standard library type `collection.immutable.Iterable` should be a subtype of `Immutable`. Concrete types such as `ImmutableArray` and `::` (the `List` cons cell) should be annotated as `@uncheckedImmutable`.  Many other standard types would become subtypes of `Immutable`. 
 
 ## Pure Methods, Second Class Values and Functional Domains
 
 The three rules above don't take into account side effects other than mutation.  For example, if a method reads a character and returns it then the object it belongs to cannot be considered immutable.  Another rule is needed for an immutable type:
 
-4. its methods do not close over any capabilities
+ 4. its methods do not close over any capabilities
 
-So far capabilities such as `IOEffect` have been described in terms of their usage.  To make this rule precise we will define a as a subtype of a marker type `Capability`.  
+This requires us to formalize a type for capabilities.  A capability has the marker type `Capability`. 
 
-With that rule in place we can make some strong statements about a method of an immutable type:
+With that in place we can make some strong statements about a method of an immutable type:
 
 - The type signature of the method determines if it is pure or not.  If the arguments are immutable the method implements a pure function.
 
