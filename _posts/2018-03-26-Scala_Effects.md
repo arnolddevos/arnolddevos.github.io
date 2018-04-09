@@ -61,15 +61,13 @@ The scala language may get an effects system, it is the last thing on the list o
 
 For example, `println(x: String)` would be given an extra argument `println(x: String, e: IOEffect): Unit` so that the caller must provide an `IOEffect` value.  
 
-The caller is not allowed to manufacture the `IOEffect` or pluck an `IOEffect` out of a global variable. That would defeat the purpose.   The caller must have an `IOEffect` among its own arguments.  
+The caller should not manufacture the `IOEffect` or pluck an `IOEffect` out of a global variable. That would defeat the purpose.   The caller should have an `IOEffect` among its own arguments.  
 
-This means that the the side-effects of a method are apparent in its type signature. Conversely, a pure method is recognized by the absence of capabilities and mutable types in its signature.  
-
-A base trait for capabilities, `scala.Capability`, will enable pure and side-effecting methods to be consistently distinguished. For example, `println(x: String, e: IOEffect)` is recognized as impure because `IOEffect <: Capability`.
+A base trait for capabilities, `scala.Capability`, will enable them to be recognized in type signatures. For example, `println(x: String, e: IOEffect)` is recognized as having side-effects because `IOEffect <: Capability`.
 
 ## The Interplay of `Capability` and `Immutable`
 
-The test for immutable types sketched out previously ignored side-effects.  We can now close this gap by preventing an immutable class or trait, `C` from closing over a capability.  Rules (3), (4) and (5) become:
+The test for immutable types sketched out previously ignored side-effects.  We can now close this gap by preventing an immutable class or trait, `C` from closing over a capability or creating one.  Rules (3), (4) and (5) become:
 
 3(a) (`Mi <: Immutable` and not `Mi <: Capability`) or `Mi <: AnyVal` for each member of `C`, `val mi: Mi`
 
