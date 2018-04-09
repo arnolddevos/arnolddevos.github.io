@@ -1,72 +1,225 @@
 ---
-title: Language-Level Effects
+title: Ideas for Language-Level Effects in Scala 
 ---
-# Ideas for Language-Level Effects in Scala 
 
-The scala language may get an effects system, it is the last thing on the list on the [dotty]() page.  I am speculating, but I think this will be based on passing values around that represent the _capability_ to cause the effect.  
+Rewritten 2018/4/9. Earlier version [here](https://github.com/arnolddevos/arnolddevos.github.io/blob/38538969525310d39a2e786f80707c86266f067d/_posts/2018-03-26-Scala_Effects.md).
 
-For example, `println(x: String)` would be given an extra argument `println(x: String, e: IOEffect): Unit` so that the caller must provide an `IOEffect` value.  The caller is not supposed to manufacture the `IOEffect` or pluck an `IOEffect` out of a global variable. That would defeat the purpose.   For reasons that will become apparent, the caller must require an `IOEffect` among its own arguments.  
+## TL;DR 
 
-## Thunks and Monads
+If immutability could be represented in the scala type system it would also be possible to define pure function types and effect capabilities. No other changes to the language would be needed. 
 
-In practice the `IOEffect` would be passed implicitly like so: `println(x: String)(implicit e: IOEffect): Unit`.  This allows us to write an expression like `println("Hello World")` which does no printing but produces a _thunk_ or suspended action.  
+The agenda is to put up a definition of _immutable_ that can be verified at the type level.  This leads to restrictions on references to mutable terms from the  body of an immutable type.  That restriction is extended in a natural way to capabilities which are values required to generate effects. 
 
-The thunk is an immutable value that can be incorporated into other thunks of the same type or into data structures.  Its type is `implicit IOEffect => Unit`.  The corresponding type would be `IO[Unit]` if we were using a monad to represent IO effects.
+It is seen that all methods of an immutable type must be pure or declare their effects in their type signatures. And effecting methods can be lifted into immutable types, reifying their effects.  Implicit functions are the most convenient and efficient lifted types. It is seen that these types always have a monad. 
 
-The `IOEffect` value is required but it does not affect the behaviour of `println`.  As an optimization, it can be marked for erasure  like so: `println(x: String)(erased implicit e: IOEffect): Unit`.  When that optimization is applied throughout, the thunks are eliminated during compilation and the runtime costs of reifying effects should be all but eliminated.  
-
-## Capabilities and Scopes
-
-Suppose `println` is called by a larger method `print_report`.  The `IOEffect` capability should also be an argument of `print_report` whose signature would be `print_report(d: Data)(erased implicit e: IOEffect): Result`.  The expression `print_report(d)` produces a thunk of type `implicit IOEffect => Result`. The corresponding monadic type would be `IO[Result]`. 
-
-It is essential that capabilities are injected as arguments (implicit or not).  If a method took a capability from the static scope it could produce the corresponding side effect directly.  Equational reasoning is defeated, types no longer reflect effects and we are no longer in the realm of functional programming.
-
-To enforce discipline, capabilities must be second class values.  They may be passed as arguments but may not be captured in data structures or closures. More about this later.
-
-At some point a capability must be manufactured and the thunks executed.  This point marks the outer boundary of an island of functional code, the "end of the world".  
-
-## Mutation Capability
-
-Mutation could also be controlled with a capability.  We can introduce `MuEffect` which would be required for assignment to a `var` and update of an `Array` element.
-
-Using this capability, the type `implicit MuEffect => (S, A) => B` would correspond to the State monad, where `S` is some mutable state.  This is useful for mutable state in the large, where the state is affected by many parts of a program. 
-
-The opposite situation is commonplace in scala, where a mutable value is confined to a single method or constructor.  For example, an Array might be used in the construction of an immutable collection.  Or an externally pure function might use a `var` internally.  Entirely local mutation should be allowed without exposing `MuEffect` in the method or constructor signature.  
-
-The next section explores an alternative approach.
+Finally, a module as a whole can be declared immutable.  The set of immutable modules and classes forms a functional domain separate from the rest of the program. Within this domain effects can be reasoned about at the type level.   
 
 ## Immutable Values
 
-Which values are immutable in scala?  Every value of type `AnyVal` is immutable. `String`s are immutable. Every `Array` is _mutable_.  Every other value of type `AnyRef` is immutable if:
+Which values are immutable in scala?  Every value of type `AnyVal` is immutable. `String`s are immutable. But every `Array` is _mutable_.  Is an instance of a scala.collection.immutable class really immutable?  We assume it is iff its elements are immutable.  
 
-1. it has no `var` members
-2. all of its `val` members are immutable
-3. its methods do not close over any `var`s or mutable `val`'s
+A rough intuition is that a value is immutable if its behaviour observed through its public methods never changes.   Here is a definition: 
 
-There are still more immutable values, such as `ImmutableArray` and `List` instances, which have `Array` and `var` members respectively but don't mutate them after construction.
+> a value is immutable if the result of each of its nullary methods is constant and the result of each method with immutable arguments is a function of those arguments.
 
-This could be formalized using a marker trait, `Immutable`.  If a type `T` is a subtype  of `AnyVal` or `Immutable` then it is an immutable type.  A class or trait inheriting `Immutable` must conform with the three rules above or it must be annotated `@uncheckedImmutable`. 
+That definition assumes "constant" and "function" have the usual functional programming interpretations. It also leaves open the possibility that a method of an immutable value could accept a mutable argument. The properties of these methods will be discussed later. 
 
-The standard library type `collection.immutable.Iterable` should be a subtype of `Immutable`. Concrete types such as `ImmutableArray` and `::` (the `List` cons cell) should be annotated as `@uncheckedImmutable`.  Many other standard types would become subtypes of `Immutable`. 
+Intuitively, a value that does not contain any mutable state will satisfy the definition (putting aside side effects such as I/O for now).  In other words: 
 
-## Pure Methods, Second Class Values and Functional Domains
+1. the value has no `var` members and all of its `val` members are immutable
+2. the value does not close over any `var`s or mutable `val`'s
 
-The three rules above don't take into account side effects other than mutation.  For example, if a method reads a character and returns it then the object it belongs to cannot be considered immutable.  Another rule is needed for an immutable type:
+While those conditions are sufficient for immutability, they are not necessary.  For example each `ImmutableArray[Int]` contains a (mutable) `Array[Int]` and each non-empty `List[Int]` (as defined in the standard library) has a `var` member. These values are immutable by the proposed definition nevertheless. 
 
- 4. its methods do not close over any capabilities
+## Immutable Types
 
-This requires us to formalize a type for capabilities.  A capability has the marker type `Capability`. 
+> A type is immutable if every value of that type is immutable (in the sense defined above).   
 
-With that in place we can make some strong statements about a method of an immutable type:
+Not many types can be shown to be immutable by this standard.  For example, a class can only be immutable if it is `final`.  Otherwise a subclass could add mutable features.  
 
-- The type signature of the method determines if it is pure or not.  If the arguments are immutable the method implements a pure function.
+To make this more tractable, a marker trait, `scala.Immutable` is proposed.  If a type `T` is a subtype `Immutable` then it is asserted to be an immutable type.  That assertion must be proved during compilation or `T` must be annotated `@uncheckedImmutable`. 
 
-- Mutable values and capabilities are second class values within the method.  They can be passed as arguments but they cannot be captured in the static scope.
+A suggested sketch of this proof starts from the two conditions above.  Consider each class or trait, `C`, where `C <: Immutable`. Show that:  
 
-A method of an immutable type that accepts a mutable value serves the same purpose as a State monad.  It captures a state-affecting operation which can be composed with others.  It confines the mutable state and can be executed within a pure function. 
+1. `Bi <: Immutable` for each class or trait, `Bi` where `C <: Bi`.
+2. `C` defines no `var` members.
+3. `Mi <: Immutable` or `Mi <: AnyVal` for each member of `C`, `val mi: Mi`.
+4. `Ti <: Immutable` or `Ti < AnyVal` or `Pi < Immutable` for each free term `ti` in the body of `C` where `(pi: Pi).ti: Ti`. 
+5. `Ni <: Immutable` for each constructor application `new ... Ni(...) ...` in the body of `C`.
 
-A module, or global `object` that is marked `Immutable` creates a functional domain within which mutation and side-effects are controlled and can be reasoned about.
+By way of explanation, 
 
-## Conclusion
+- (1) ensures all ancestor classes are separately proved immutable. 
+- (2) prevents direct mutation.
+- (3) ensures all value members are separately proved immutable.
+- (4) prevents closing over a mutable value directly or by reference to its methods.  Note that the terms may be implicit or explicit. 
+- (5) prevents closing over a mutable value indirectly through a constructor application.
 
-The concept of immutable types outlined here is sufficient to provide an effects system and pure functions without any other change to the scala language.  Implicit functions are unnecessary for this but they make it easy to lift expressions into effects and to compose effects. 
+## Introducing an `IOEffect`
+
+The scala language may get an effects system, it is the last thing on the list on the [dotty]() page.  This could be based on passing values around that represent the _capability_ to cause the effect.  
+
+For example, `println(x: String)` would be given an extra argument `println(x: String, e: IOEffect): Unit` so that the caller must provide an `IOEffect` value.  
+
+The caller is not allowed to manufacture the `IOEffect` or pluck an `IOEffect` out of a global variable. That would defeat the purpose.   The caller must have an `IOEffect` among its own arguments.  
+
+This means that the the side-effects of a method are apparent in its type signature. Conversely, a pure method is recognized by the absence of capabilities and mutable types in its signature.  
+
+A base trait for capabilities, `scala.Capability`, will enable pure and side-effecting methods to be consistently distinguished. For example, `println(x: String, e: IOEffect)` is recognized as impure because `IOEffect <: Capability`.
+
+## The Interplay of `Capability` and `Immutable`
+
+The test for immutable types sketched out previously ignored side-effects.  We can now close this gap by preventing an immutable class or trait, `C` from closing over a capability.  Rules (3), (4) and (5) become:
+
+3(a) (`Mi <: Immutable` and not `Mi <: Capability`) or `Mi <: AnyVal` for each member of `C`, `val mi: Mi`
+
+4(a) (`Ti <: Immutable` and not `Ti <: Capability`) or `Ti < AnyVal` or `Pi < Immutable` for each free term `ti` in the body of `C` where `(pi: Pi).ti: Ti`. 
+
+5(a) `Ni <: Immutable` and not `Ni <: Capability` for each constructor application `new ... Ni(...) ...` in the body of `C`.
+
+Purity is now evident from the types alone.  A method of of `C` is pure if its type signature does not involve any capability or mutable type.  
+
+Just as interesting, a method of `C` that accepts a capability or mutable value cannot capture its argument.  It can therefore be lifted into an immutable value that represents a side-effecting operation.
+
+## Thunks and IO Monads
+
+Consider
+
+```scala
+object PrintOps extends Immutable {
+    def println(x: String, e: IOEffect): Unit = { ... }
+    // ...
+}
+
+object Example1 extends Immutable {
+    val message: IOEffect => Unit = println("hello world", _)
+}
+```
+ The value `message` is a thunk that will print "hello world" when it is executed.   It captures the  `PrintOps` object and a `String` in the body of a `Function1`.  To make the example valid we have to suppose those are subtypes of `Immutable`.  In that case `message` is a provably immutable value representing an I/O operation.  
+
+Is there a monad here? 
+
+```scala
+type IO[T] = IOEffect => T
+
+implicit object ioInstance extends scalaz.Monad[IO] {
+    def bind[A, B](fa: IO[A])(fb: A => IO[B]): IO[B] = e => fb(fa(e))(e)
+    def point[A](a: A): IO[A] = e => a
+}
+```
+
+This is a well known monad, the function monad. Left and right identity and associativity are easily shown.
+
+## Implicit Functions
+
+In practice the `IOEffect` would be passed implicitly like so: `println(x: String)(implicit e: IOEffect): Unit`.  This allows us to write an expression like `println("Hello World")` which is automatically lifted into `IO[Unit]` which is now defined as:
+
+```scala
+type IO[Unit] = implicit IOEffect => Unit
+```
+
+The various implicit function shortcuts apply.  A `;` works something like the monadic `>>` operator in this example:
+
+```scala
+def printTwice(x: String): IO[Unit] = { println(x); println(x) }
+``` 
+
+Note that the `IOEffect` value is required but it does not affect the behaviour of `println`.  As an optimization, it can be marked for erasure  like so: `println(x: String)(erased implicit e: IOEffect): Unit`.  When that optimization is applied throughout, the thunks are eliminated during compilation and the runtime costs of reifying effects should be all but eliminated.  
+
+## Allowing Local Mutation
+
+It is reasonable to create and use local mutable state within a pure method or in the construction of an immutable value.  Mutable _builders_ in the standard library construct immutable collections, for example.  The penalty is the loss of equational reasoning in the local scope.  That can be mitigated by keeping the scope small or lifting the mutations into a state monad.  
+
+Rule (5) prevents us constructing a mutable value directly because its constructor might close over some global mutable state.  But we can bless constructors that don't using the `@uncheckedImmutable` annotation.
+
+```scala
+@uncheckedImmutable object LocalState extends Immutable {
+    import scala.collection.mutable
+    def Buffer[A]() = new mutable.ArrayBuffer[A]()
+    def Map[A, B]() = new mutable.HashMap[A]() 
+    def Set[A]() = new mutable.HashSet[A]()
+    def Queue[A] = new mutable.Queue[A]()
+}
+```
+
+Now we can use these in pure methods. For example, as the intermediate data structures in an (imperative) topological sort:
+
+```scala
+object Example2 extends Immutable {
+    def topologicalSort(g: Graph): Vector[Node] = {
+        import LocalState._
+        val ordered = Buffer[Node]()
+        val degree  = Map[Node, Int]()
+        val pending = Queue[Node]()
+
+        // Khan's algorithm elided for brevity
+        // ...
+
+        ordered.toList
+    }
+}
+```
+
+## A State Monad
+
+Similar to `IO` above, we can capture a mutation in an implicit function.   
+
+```scala
+type State[S, A] = implicit S => A
+```
+  
+An `S` is a mutable value but could be seen as the capability to read and write this particular data structure.  A `State[S, A]` is a read/write operation that requires a capability of type `S` and produces an `A`. 
+
+To show that `State` is a monad we again write out a version of the function monad, this time with some extra operations specific to state monads.  The comments to the right show the equivalent of each expression, written out in full.
+
+```scala
+class MonadState[S] extends scalaz.Monad[[A] => State[S, A]] {
+    type F[A] = State[S, A]
+    def bind[A, B](fa: F[A])(fb: A => F[B]): F[B] = fb(fa) // implicit s => fb(fa(s))(s)
+    def point[A](a: A): F[A] = a                           // implicit s => a
+    def get: F[S] = implicitly[S]                          // implicit s => s
+    def gets[T](f: S => T): F[T] = f(get)                  // implicit s => f(get(s))
+    def modify(f: S => Unit): F[Unit] = f(get)             // implicit s => f(get(s))
+}
+implicit def instance[S] = new MonadState[S]
+```
+
+Continuing the earlier graph example, here are some `State` values that operate on a map of nodes to inbound degree.  These rely on implicit function composition, rather than the foregoing typeclass.
+
+```scala
+object Example3 extends Immutable {
+    // the mutable type
+    type Degree = LocalState.Map[Node, Int]
+    // makes no change and returns the current state
+    def degree: State[Degree, Degree] = implicitly[Degree]
+    // reduces the degree of the given Node
+    def decrement(n: Node): State[Degree, Int] = { val i = degree(n)-1; degree.update(n, i); i }
+    // discounts the outbound edges of of a Node and returns its successors
+    def discount(n: Node, g: Graph): State[Degree, Seq[Node]] = for( m <- g.outEdge(n); i = decrement(m) if i == 0) yield m
+}
+```
+
+### Sidebar: Isn't Implicit Mutable State Insane?
+
+No, not when used in `Immutable` modules and classes.  A method cannot pick up a mutable value, implicit or not, from its surrounding static scope. The implicit mutable state we are dealing with is always local.  
+
+## The End of The World
+
+The set of modules, or global objects, and classes that are marked `Immutable` form a _functional domain_.  
+
+- Values, methods and constructors outside the functional domain cannot be directly referenced from within.   
+- Inside the functional domain all methods are pure or their effects including _externally visible_ mutation are declared in their type signatures. 
+- The effecting methods can be lifted into monadic values, reifying their effects.
+- The boundary of the functional domain, or "the end of the world", is where capabilities are supplied and reified effects are executed.  
+
+These properties all stem from a concept of immutable types and don't need any other change to the scala language.  Implicit functions are unnecessary for any of this, but they make it easy to lift expressions into effects and to compose effects. 
+
+## Further Reading
+
+- [LACASA: Lightweight Affinity and Object Capabilities in Scala](http://www.csc.kth.se/~phaller/doc/haller16-oopsla.pdf). Philipp Haller and Alex Loiko. 
+
+- [Gentrification Gone too Far?
+Affordable 2nd-Class Values for Fun and (Co-)Effect](https://www.cs.purdue.edu/homes/rompf/papers/osvald-oopsla16.pdf). Leo Osvald, Grégory Essertel, Xilun Wu, Lilliam I. González-Alayón, Tiark Rompf.
+
+- [A Study of Capability-Based Effect Systems (Thesis)](https://infoscience.epfl.ch/record/219173/files/thesis-2017-1-update_1.pdf). Fengyun Liu.
+
