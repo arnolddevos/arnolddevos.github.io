@@ -89,6 +89,8 @@ object PrintOps extends Immutable {
     // ...
 }
 
+import PrintOps._
+
 object Example1 extends Immutable {
     val message: IOEffect => Unit = println("hello world", _)
 }
@@ -113,7 +115,7 @@ This is a well known monad, the function monad. Left and right identity and asso
 In practice the `IOEffect` would be passed implicitly like so: `println(x: String)(implicit e: IOEffect): Unit`.  This allows us to write an expression like `println("Hello World")` which is automatically lifted into `IO[Unit]` which is now defined as:
 
 ```scala
-type IO[Unit] = implicit IOEffect => Unit
+type IO[A] = implicit IOEffect => A
 ```
 
 Implicit function types should be marked `Immutable` so they can be used this way. 
@@ -136,9 +138,9 @@ Rule (5) prevents us constructing a mutable value directly because its construct
 @uncheckedImmutable object LocalState extends Immutable {
     import scala.collection.mutable
     def Buffer[A]() = new mutable.ArrayBuffer[A]()
-    def Map[A, B]() = new mutable.HashMap[A]() 
-    def Set[A]() = new mutable.HashSet[A]()
-    def Queue[A] = new mutable.Queue[A]()
+    def Map[A, B]() = new mutable.HashMap[A, B]() 
+    def Set[A]()    = new mutable.HashSet[A]()
+    def Queue[A]()  = new mutable.Queue[A]()
 }
 ```
 
@@ -155,7 +157,7 @@ object Example2 extends Immutable {
         // Khan's algorithm elided for brevity
         // ...
 
-        ordered.toList
+        ordered.toVector
     }
 }
 ```
@@ -181,7 +183,7 @@ class MonadState[S] extends scalaz.Monad[[A] => State[S, A]] {
     def gets[T](f: S => T): F[T] = f(get)                  // implicit s => f(get(s))
     def modify(f: S => Unit): F[Unit] = f(get)             // implicit s => f(get(s))
 }
-implicit def instance[S] = new MonadState[S]
+implicit def instance[S]: MonadState[S] = new MonadState[S]
 ```
 
 Continuing the earlier graph example, here are some `State` values that operate on a map of nodes to inbound degree.  These rely on implicit function composition, rather than the foregoing typeclass.
@@ -189,11 +191,11 @@ Continuing the earlier graph example, here are some `State` values that operate 
 ```scala
 object Example3 extends Immutable {
     // the mutable type
-    type Degree = LocalState.Map[Node, Int]
+    type Degree = scala.collection.mutable.Map[Node, Int]
     // makes no change and returns the current state
     def degree: State[Degree, Degree] = implicitly[Degree]
     // reduces the degree of the given Node
-    def decrement(n: Node): State[Degree, Int] = { val i = degree(n)-1; degree.update(n, i); i }
+    def decrement(n: Node): State[Degree, Int] = { val i = degree.get(n).get-1; degree.update(n, i); i }
     // discounts the outbound edges of of a Node and returns its successors
     def discount(n: Node, g: Graph): State[Degree, Seq[Node]] = for( m <- g.outEdge(n); i = decrement(m) if i == 0) yield m
 }
