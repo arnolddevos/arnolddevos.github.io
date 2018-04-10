@@ -1,5 +1,5 @@
 ---
-title: Ideas for Language-Level Effects in Scala 
+title: Idea for Immutable Types and Language-Level Effects in Scala 
 ---
 
 Rewritten 2018/4/9. Earlier version [here](https://github.com/arnolddevos/arnolddevos.github.io/blob/38538969525310d39a2e786f80707c86266f067d/_posts/2018-03-26-Scala_Effects.md).
@@ -10,9 +10,9 @@ If immutability could be represented in the scala type system it would also be p
 
 The agenda is to put up a definition of _immutable_ that can be verified at the type level.  This leads to restrictions on references to mutable terms from the  body of an immutable type.  That restriction is extended in a natural way to capabilities which are values required to generate effects. 
 
-It is seen that all methods of an immutable type must be pure or declare their effects in their type signatures. And effecting methods can be lifted into immutable types, reifying their effects.  Implicit functions are the most convenient and efficient lifted types. It is seen that these types always have a monad. 
+It is seen that all methods of an immutable type must be pure or declare their effects in their type signatures. Methods of immutable types with effects can be lifted into immutable types, reifying their effects.  Implicit functions are the most convenient and efficient lifted types. It is seen that these lifted types are monadic. 
 
-Finally, a module as a whole can be declared immutable.  The set of immutable modules and classes forms a functional domain separate from the rest of the program. Within this domain effects can be reasoned about at the type level.   
+Finally, a module as a whole can be declared immutable.  The set of immutable modules and classes forms a functional domain separate from the rest of the program. Within this domain effects can be reasoned about at the type level. Outside this domain, effects can be executed.
 
 ## Immutable Values
 
@@ -49,11 +49,11 @@ A suggested sketch of this proof starts from the two conditions above.  Consider
 
 By way of explanation, 
 
-- (1) ensures all ancestor classes are separately proved immutable. 
-- (2) prevents direct mutation.
-- (3) ensures all value members are separately proved immutable.
-- (4) prevents closing over a mutable value directly or by reference to its methods.  Note that the terms may be implicit or explicit. 
-- (5) prevents closing over a mutable value indirectly through a constructor application.
+1. ensures all ancestor classes are separately proved immutable. 
+2. prevents direct mutation.
+3. ensures all value members are separately proved immutable.
+4. prevents closing over a mutable value directly or by reference to its methods.  Note that the terms may be implicit or explicit. 
+5. prevents closing over a mutable value indirectly through a constructor application.
 
 ## Introducing an `IOEffect`
 
@@ -77,7 +77,7 @@ The test for immutable types sketched out previously ignored side-effects.  We c
 
 Purity is now evident from the types alone.  A method of of `C` is pure if its type signature does not involve any capability or mutable type.  
 
-Just as interesting, a method of `C` that accepts a capability or mutable value cannot capture its argument.  It can therefore be lifted into an immutable value that represents a side-effecting operation.
+Just as interesting, a method of `C` that accepts a capability or mutable value cannot capture its argument or any other mutable value or capability.  It can therefore be lifted into an immutable value that represents its effect.
 
 ## Thunks and IO Monads
 
@@ -115,6 +115,8 @@ In practice the `IOEffect` would be passed implicitly like so: `println(x: Strin
 ```scala
 type IO[Unit] = implicit IOEffect => Unit
 ```
+
+Implicit function types should be marked `Immutable` so they can be used this way. 
 
 The various implicit function shortcuts apply.  A `;` works something like the monadic `>>` operator in this example:
 
@@ -207,10 +209,10 @@ The set of modules, or global objects, and classes that are marked `Immutable` f
 
 - Values, methods and constructors outside the functional domain cannot be directly referenced from within.   
 - Inside the functional domain all methods are pure or their effects including _externally visible_ mutation are declared in their type signatures. 
-- The effecting methods can be lifted into monadic values, reifying their effects.
+- A method with effects can be lifted into a monadic value, reifying its effects.
 - The boundary of the functional domain, or "the end of the world", is where capabilities are supplied and reified effects are executed.  
 
-These properties all stem from a concept of immutable types and don't need any other change to the scala language.  Implicit functions are unnecessary for any of this, but they make it easy to lift expressions into effects and to compose effects. 
+These properties all stem from a concept of immutable types and don't rely on any other change to the scala language.  Implicit functions are unnecessary for any of this, but they make it easy to lift expressions into effects and to compose effects. The impact of this scheme on the standard library is not discussed.
 
 ## Further Reading
 
